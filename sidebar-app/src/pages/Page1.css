@@ -1,0 +1,43 @@
+.container {
+    margin-left: 220px;
+    padding: 20px;
+  }
+  
+  .header {
+    font-size: 24px;
+    margin-bottom: 20px;
+  }
+  
+  .form-group {
+    margin-bottom: 20px;
+  }
+  
+  .button {
+    padding: 10px 20px;
+    background-color: #3498db;
+    color: white;
+    border: none;
+    cursor: pointer;
+  }
+  
+  .button:hover {
+    background-color: #2980b9;
+  }
+  
+  .error {
+    color: red;
+  }
+  
+  .result {
+    margin-top: 20px;
+  }
+  
+  .result h2 {
+    font-size: 20px;
+  }
+  
+  .result pre {
+    background-color: #f8f8f8;
+    padding: 10px;
+  }
+  

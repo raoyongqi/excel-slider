@@ -1,5 +1,5 @@
-from fastapi import FastAPI, File, UploadFile, HTTPException
-from fastapi.responses import JSONResponse
+from fastapi import FastAPI, File, UploadFile, Form, HTTPException
+from fastapi.responses import JSONResponse, FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 from typing import List
 import pandas as pd
@@ -8,7 +8,6 @@ import logging
 import os
 from tempfile import NamedTemporaryFile
 import shutil
-
 app = FastAPI()
 
 # 添加跨域支持
@@ -67,6 +66,22 @@ async def upload_excel(files: List[UploadFile]):
             return JSONResponse(status_code=500, content={"error": error_message, "traceback": error_traceback})
     return result
 
+
+
+@app.post("/download/")
+async def download_file(columns: str = Form(...)):
+    try:
+        selected_columns = columns.split(',')
+        df = pd.read_csv("uploaded_file.csv", usecols=selected_columns)
+        output_file = "selected_columns.xlsx"
+        df.to_excel(output_file, index=False, engine='xlsxwriter')
+        return FileResponse(output_file, filename=output_file)
+    except Exception as e:
+        error_message = str(e)
+        error_traceback = traceback.format_exc()
+        logger.error(f"Error during download: {error_message}")
+        logger.error(error_traceback)
+        return JSONResponse(status_code=500, content={"error": error_message, "traceback": error_traceback})
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="127.0.0.1", port=8000)

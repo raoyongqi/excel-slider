@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import './Page1.css';
 import FileUpload from '../components/FileUpload';
 
-function App() {
+function Page1() {
     return (
         <div className="App">
             <header className="App-header">
@@ -16,4 +16,4 @@ function App() {
     );
 }
 
-export default App;
+export default Page1;

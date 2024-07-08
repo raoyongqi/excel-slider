@@ -7,7 +7,8 @@ from tempfile import NamedTemporaryFile
 import shutil
 from typing import List
 from FileManager import FileManager
-
+import logging
+import traceback
 app = FastAPI()
 
 # 添加跨域支持
@@ -25,6 +26,48 @@ app.add_middleware(
 )
 
 file_manager = FileManager()
+
+# 配置日志
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+# 支持的文件扩展名
+ALLOWED_EXTENSIONS = {".xlsx", ".xlsm", ".xltx", ".xltm", ".xls"}
+
+def allowed_file(filename: str) -> bool:
+    return os.path.splitext(filename)[1] in ALLOWED_EXTENSIONS
+
+@app.post("/upload2/")
+async def upload_excel(files: List[UploadFile]):
+    result = {}
+    for file in files:
+        if not allowed_file(file.filename):
+            raise HTTPException(status_code=400, detail=f"Unsupported file format: {file.filename}")
+
+        try:
+            logger.info(f"Processing file: {file.filename}")
+            
+            # 将上传的文件保存到临时文件中
+            with NamedTemporaryFile(delete=False, suffix=os.path.splitext(file.filename)[1]) as tmp:
+                shutil.copyfileobj(file.file, tmp)
+                tmp_name = tmp.name
+            
+            # 使用 pandas 读取 Excel 文件
+            df = pd.read_excel(tmp_name)
+            os.remove(tmp_name)  # 处理完后删除临时文件
+
+            columns = [{'key': str(i), 'name': col, 'editable': True} for i, col in enumerate(df.columns)]
+            rows = df.to_dict(orient='records')
+            for idx, row in enumerate(rows):
+                row['id'] = idx
+            result[file.filename] = {'columns': columns, 'rows': rows}
+        except Exception as e:
+            error_message = str(e)
+            error_traceback = traceback.format_exc()
+            logger.error(f"Error processing file {file.filename}: {error_message}")
+            logger.error(error_traceback)
+            return JSONResponse(status_code=500, content={"error": error_message, "traceback": error_traceback})
+    return result
 
 @app.post("/upload/")
 async def upload_excel(file: UploadFile = File(...)):
@@ -44,6 +87,7 @@ async def upload_excel(file: UploadFile = File(...)):
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/download/")
+
 async def download_file(filename: str = Form(...), columns: str = Form(...)):
     columns = columns.split(',')
     download_subdir = os.path.join(file_manager.upload_dir, filename)

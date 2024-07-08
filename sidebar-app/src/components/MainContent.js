@@ -28,7 +28,6 @@
 // export default Content;
 import React from 'react';
 import { Route, Routes } from 'react-router-dom';
-import Sidebar from './Sidebar';
 import Home from '../pages/Home';
 import DataPreview from '../pages/DataPreview';
 import SelectColumns from '../pages/SelectColumns';

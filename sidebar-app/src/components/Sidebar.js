@@ -18,29 +18,20 @@ const Sidebar = () => {
         <div className={`sidebar ${isSidebarOpen ? 'open' : 'closed'}`}>
             <div className="sidebar-content">
                 <NavLink exact to="/" activeClassName="active">首页</NavLink>
+                <NavLink to="/data-preview" activeClassName="active">数据预览</NavLink>
+                <NavLink to="/select-columns" activeClassName="active">选取子列</NavLink>
                 <div>
-                    <div onClick={() => handleMenuClick('menu1')} className="menu">
-                        上传特征变量 <span className="menu-arrow">&#9660;</span>
+                    <div onClick={() => handleMenuClick('upload')} className="menu">
+                        上传 <span className="menu-arrow">&#9660;</span>
                     </div>
-                    {openMenu === 'menu1' && (
+                    {openMenu === 'upload' && (
                         <div className="submenu">
-                            <NavLink to="/page1" activeClassName="active">上传特征变量</NavLink>
-                            <NavLink to="/page2" activeClassName="active">上传标签变量</NavLink>
+                            <NavLink to="/upload-features" activeClassName="active">上传特征变量</NavLink>
+                            <NavLink to="/upload-labels" activeClassName="active">上传标签变量</NavLink>
                         </div>
                     )}
                 </div>
-                <div>
-                    <div onClick={() => handleMenuClick('menu2')} className="menu">
-                        数据处理 <span className="menu-arrow">&#9660;</span>
-                    </div>
-                    {openMenu === 'menu2' && (
-                        <div className="submenu">
-                            <NavLink to="/page3" activeClassName="active">拆分数据集</NavLink>
-                        </div>
-                    )}
-                </div>
-                <NavLink to="/page4" activeClassName="active">随机森林结果输出</NavLink>
-                <NavLink to="/page5" activeClassName="active">上传测试数据</NavLink>
+                <NavLink to="/model-display" activeClassName="active">模型下载和展示</NavLink>
             </div>
             <button className="toggle-button" onClick={toggleSidebar}>
                 {isSidebarOpen ? '<<' : '>>'}

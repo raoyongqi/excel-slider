@@ -4,7 +4,7 @@ import FileUpload from '../components/FileUpload2';
 import ColumnSelector from '../components/ColumnSelector';
 
 
-function Page3() {
+function SelectColumns() {
     const [columns, setColumns] = useState([]);
     const [filename, setFilename] = useState('');
 
@@ -56,4 +56,4 @@ function Page3() {
     );
 }
 
-export default Page3;
+export default SelectColumns;

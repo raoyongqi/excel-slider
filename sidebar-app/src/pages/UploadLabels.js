@@ -1,6 +1,6 @@
 import React from 'react';
 
-const Page4 = () => {
+const UploadLabels = () => {
     return (
         <div>
             <h1>预测结果</h1>
@@ -9,4 +9,4 @@ const Page4 = () => {
     );
 };
 
-export default Page4;
+export default UploadLabels;

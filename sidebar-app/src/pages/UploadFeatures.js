@@ -1,9 +1,7 @@
-
-import React, { useState } from 'react';
-import './Page1.css';
+import React from 'react';
 import FileUpload from '../components/FileUpload';
 
-function Page1() {
+const UploadFeatures = () => {
     return (
         <div className="App">
             <header className="App-header">
@@ -14,6 +12,8 @@ function Page1() {
             </main>
         </div>
     );
-}
+};
 
-export default Page1;
+export default UploadFeatures;
+
+

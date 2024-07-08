@@ -1,6 +1,6 @@
 import React from 'react';
 
-const Page5 = () => {
+const ModelDisplay = () => {
     return (
         <div>
             <h1>模型</h1>
@@ -9,4 +9,4 @@ const Page5 = () => {
     );
 };
 
-export default Page5;
+export default ModelDisplay;

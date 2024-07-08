@@ -1,7 +1,9 @@
-import React from 'react';
+
+import React, { useState } from 'react';
+import './DataPreview.css';
 import FileUpload from '../components/FileUpload';
 
-const Page2 = () => {
+function DataPreview() {
     return (
         <div className="App">
             <header className="App-header">
@@ -12,8 +14,6 @@ const Page2 = () => {
             </main>
         </div>
     );
-};
+}
 
-export default Page2;
-
-
+export default DataPreview;

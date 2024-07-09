@@ -1,4 +1,4 @@
-from fastapi import FastAPI, UploadFile, File, Form, HTTPException
+from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Depends
 from fastapi.responses import JSONResponse, FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 import pandas as pd
@@ -6,21 +6,20 @@ import os
 from tempfile import NamedTemporaryFile
 import shutil
 from typing import List
-from FileManager import FileManager
-import logging
-import traceback
-from fastapi import FastAPI, UploadFile, File, HTTPException, Depends
 from sqlalchemy import create_engine, MetaData, Table, Column, Integer, String, Float, text
 from sqlalchemy.orm import sessionmaker, Session
 from sqlalchemy.ext.declarative import declarative_base
-import pandas as pd
-import os
+from sqlalchemy.ext.automap import automap_base
+import logging
+import traceback
+from FileManager import FileManager
 app = FastAPI()
-
+file_manager = FileManager()
 # 添加跨域支持
 origins = [
     "http://localhost",
     "http://localhost:3000",
+    "*",  # 允许所有源访问
 ]
 
 app.add_middleware(
@@ -31,8 +30,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-file_manager = FileManager()
-
 # 配置日志
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -42,6 +39,28 @@ ALLOWED_EXTENSIONS = {".xlsx", ".xlsm", ".xltx", ".xltm", ".xls"}
 
 def allowed_file(filename: str) -> bool:
     return os.path.splitext(filename)[1] in ALLOWED_EXTENSIONS
+
+# 数据库连接配置
+DATABASE_URL = "mysql+pymysql://root:123456@localhost/excel_db"
+
+# SQLAlchemy引擎和会话
+engine = create_engine(DATABASE_URL)
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+Base = declarative_base()
+
+# 自动映射数据库表
+metadata = MetaData()
+Base = automap_base(metadata=metadata)
+Base.prepare(engine, reflect=True)
+UploadedData = Base.classes.uploaded_data
+
+# 数据库会话依赖项
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
 
 @app.post("/upload2/")
 async def upload_excel(files: List[UploadFile]):
@@ -110,22 +129,6 @@ async def download_file(filename: str = Form(...), columns: str = Form(...)):
 
     return FileResponse(output_path, filename=f"selected_{filename}.xlsx", media_type='application/octet-stream')
 
-# 数据库连接配置
-DATABASE_URL = "mysql+pymysql://root:123456@localhost/excel_db"
-
-# SQLAlchemy引擎和会话
-engine = create_engine(DATABASE_URL)
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-Base = declarative_base()
-
-# 数据库会话依赖项
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
-
 # 上传Excel文件并处理
 @app.post("/upload_excel/")
 async def upload_excel(file: UploadFile = File(...), db: Session = Depends(get_db)):
@@ -180,6 +183,20 @@ async def upload_excel(file: UploadFile = File(...), db: Session = Depends(get_d
         return {"filename": file.filename}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+# 获取数据库中的数据
+@app.get("/fetch_data")
+def fetch_data(db: Session = Depends(get_db)):
+    try:
+        data = db.query(UploadedData).all()
+        if not data:
+            raise HTTPException(status_code=404, detail="No data found")
+        result = [item.__dict__ for item in data]
+        for item in result:
+            item.pop('_sa_instance_state', None)  # 去掉SQLAlchemy内部属性
+        return result
+    finally:
+        db.close()
 
 if __name__ == "__main__":
     import uvicorn

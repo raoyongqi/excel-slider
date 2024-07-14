@@ -2,8 +2,8 @@ import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import ReactECharts from 'echarts-for-react';
 import './BoxPlotChartLabel.css';
-const BoxPlotChartLabel  = ({ type }) => {
-  const [chartData, setChartData] = useState({});
+const BoxPlotChartLabel  =  ({ type }) => {
+  const [chartData, setChartData] = useState([]);
 
   useEffect(() => {
       fetchData();
@@ -20,35 +20,32 @@ const BoxPlotChartLabel  = ({ type }) => {
   };
 
   const processBoxPlotData = (data) => {
-      const boxPlotData = Object.keys(data.rows[0]) // Get all keys (column names)
+      return Object.keys(data.rows[0]) // Get all keys (column names)
           .filter(key => key !== 'id') // Exclude 'id' column
-          .map(column => {
-              const values = data.rows.map(row => row[column]);
-              return {
-                  name: column,
-                  type: 'boxplot',
-                  data: calculateBoxPlot(values)
-              };
-          });
-      return {
-          legend: {
-              data: boxPlotData.map(item => item.name)
-          },
-          tooltip: {
-              trigger: 'item',
-              axisPointer: {
-                  type: 'shadow'
+          .map(column => ({
+              name: column,
+              option: {
+                  legend: {},
+                  tooltip: {
+                      trigger: 'item',
+                      axisPointer: {
+                          type: 'shadow'
+                      }
+                  },
+                  xAxis: {
+                      type: 'category',
+                      data: ['Boxplot']
+                  },
+                  yAxis: {
+                      type: 'value'
+                  },
+                  series: [{
+                      name: column,
+                      type: 'boxplot',
+                      data: calculateBoxPlot(data.rows.map(row => row[column]))
+                  }]
               }
-          },
-          xAxis: {
-              type: 'category',
-              data: boxPlotData.map(item => item.name)
-          },
-          yAxis: {
-              type: 'value'
-          },
-          series: boxPlotData
-      };
+          }));
   };
 
   const calculateBoxPlot = (values) => {
@@ -64,10 +61,15 @@ const BoxPlotChartLabel  = ({ type }) => {
   };
 
   return (
-      <div>
-          <h2>{type === 'features' ? '特征变量的箱线图' : '标签变量的箱线图'}</h2>
-          <ReactECharts option={chartData} style={{ height: '600px', width: '100%' }} />
+      <div className="boxplot-container">
+          {chartData.map((item, index) => (
+              <div key={index} className="boxplot-item">
+                  <h2>{item.name}</h2>
+                  <ReactECharts option={item.option} style={{ height: '400px', width: '100%' }} />
+              </div>
+          ))}
       </div>
   );
 };
+
 export default BoxPlotChartLabel;

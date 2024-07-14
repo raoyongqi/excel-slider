@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import ReactECharts from 'echarts-for-react';
 import './BoxPlotChartLabel.css';
-const BoxPlotChartLabel = ({ type }) => {
+const BoxPlotChartLabel  = ({ type }) => {
   const [chartData, setChartData] = useState({});
 
   useEffect(() => {
@@ -20,17 +20,19 @@ const BoxPlotChartLabel = ({ type }) => {
   };
 
   const processBoxPlotData = (data) => {
-      const boxPlotData = data.columns.map(column => {
-          const values = data.rows.map(row => row[column]);
-          return {
-              name: column,
-              type: 'boxplot',
-              data: calculateBoxPlot(values)
-          };
-      });
+      const boxPlotData = Object.keys(data.rows[0]) // Get all keys (column names)
+          .filter(key => key !== 'id') // Exclude 'id' column
+          .map(column => {
+              const values = data.rows.map(row => row[column]);
+              return {
+                  name: column,
+                  type: 'boxplot',
+                  data: calculateBoxPlot(values)
+              };
+          });
       return {
           legend: {
-              data: data.columns
+              data: boxPlotData.map(item => item.name)
           },
           tooltip: {
               trigger: 'item',
@@ -40,7 +42,7 @@ const BoxPlotChartLabel = ({ type }) => {
           },
           xAxis: {
               type: 'category',
-              data: data.columns
+              data: boxPlotData.map(item => item.name)
           },
           yAxis: {
               type: 'value'
@@ -61,7 +63,6 @@ const BoxPlotChartLabel = ({ type }) => {
       return [[min, q1, median, q3, max]];
   };
 
-
   return (
       <div>
           <h2>{type === 'features' ? '特征变量的箱线图' : '标签变量的箱线图'}</h2>
@@ -69,5 +70,4 @@ const BoxPlotChartLabel = ({ type }) => {
       </div>
   );
 };
-
 export default BoxPlotChartLabel;

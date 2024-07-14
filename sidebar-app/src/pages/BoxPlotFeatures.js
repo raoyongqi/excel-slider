@@ -1,6 +1,5 @@
 import React from 'react';
 import BoxPlotChartFeature from '../components/BoxPlotChartFeature';
-import './BoxPlotFeatures.css';
 function BoxPlotFeatures() {
   return (
     <div className="App">

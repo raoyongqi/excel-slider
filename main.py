@@ -13,7 +13,7 @@ from sqlalchemy.ext.automap import automap_base
 import logging
 import traceback
 from FileManager import FileManager
-from sklearn.ensemble import RandomForestClassifier
+from sklearn.ensemble import RandomForestRegressor
 import joblib
 from typing import List, Dict
 
@@ -317,15 +317,16 @@ if not os.path.exists(MODEL_DIR):
     os.makedirs(MODEL_DIR)
 def train_and_save_models():
 
-
     feature_df = pd.read_sql("SELECT * FROM uploaded_feature", engine)
+    feature_df = feature_df.drop(columns=["id"])  # 移除id列
     label_df = pd.read_sql("SELECT * FROM uploaded_label", engine)
+    label_df = label_df.drop(columns=["id"])  # 移除id列
 
     for label_column in label_df.columns:
         X = feature_df
         y = label_df[label_column]
 
-        model = RandomForestClassifier()
+        model = RandomForestRegressor()
         model.fit(X, y)
 
         joblib.dump(model, f"{MODEL_DIR}/model_{label_column}.joblib")
@@ -346,6 +347,7 @@ async def feature_importances() -> Dict[str, List]:
 
         models = load_models()
         feature_df = pd.read_sql("SELECT * FROM uploaded_feature", engine)
+        feature_df = feature_df.drop(columns=["id"])  # 移除id列
         importances = []
 
         for label, model in models.items():

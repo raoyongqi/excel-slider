@@ -274,8 +274,36 @@ async def upload_excel(file: UploadFile = File(...), db: Session = Depends(get_d
         raise HTTPException(status_code=500, detail=str(e))
 
 
-
-
+@app.get("/fetch_label_box")
+def fetch_data(db: Session = Depends(get_db)):
+    try:
+        UploadedLabel = Base.classes.uploaded_label
+        if not UploadedLabel:
+            raise HTTPException(status_code=404, detail="No mysql upload_label table")
+        data = db.query(UploadedLabel).all()
+        if not data:
+            raise HTTPException(status_code=404, detail="No data found")
+        result = [item.__dict__ for item in data]
+        for item in result:
+            item.pop('_sa_instance_state', None)
+        return {"columns": list(result[0].keys()), "rows": result}
+    finally:
+        db.close()
+@app.get("/fetch_feature_box")
+def fetch_data(db: Session = Depends(get_db)):
+    try:
+        UploadedLabel = Base.classes.uploaded_feature
+        if not UploadedLabel:
+            raise HTTPException(status_code=404, detail="No mysql upload_label table")
+        data = db.query(UploadedLabel).all()
+        if not data:
+            raise HTTPException(status_code=404, detail="No data found")
+        result = [item.__dict__ for item in data]
+        for item in result:
+            item.pop('_sa_instance_state', None)
+        return {"columns": list(result[0].keys()), "rows": result}
+    finally:
+        db.close()
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="127.0.0.1", port=8000)

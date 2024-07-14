@@ -22,12 +22,23 @@ const Sidebar = () => {
                 <NavLink to="/select-columns" activeClassName="active">选取子列</NavLink>
                 <div>
                     <div onClick={() => handleMenuClick('upload')} className="menu">
-                        上传 <span className="menu-arrow">&#9660;</span>
+                        上传数据集 <span className="menu-arrow">&#9660;</span>
                     </div>
                     {openMenu === 'upload' && (
                         <div className="submenu">
                             <NavLink to="/upload-features" activeClassName="active">上传特征变量</NavLink>
                             <NavLink to="/upload-labels" activeClassName="active">上传标签变量</NavLink>
+                        </div>
+                    )}
+                </div>
+                <div>
+                    <div onClick={() => handleMenuClick('boxplot')} className="menu">
+                        箱线图展示 <span className="menu-arrow">&#9660;</span>
+                    </div>
+                    {openMenu === 'boxplot' && (
+                        <div className="submenu">
+                            <NavLink to="/boxplot-features" activeClassName="active">特征变量的箱线图</NavLink>
+                            <NavLink to="/boxplot-labels" activeClassName="active">标签变量的箱线图</NavLink>
                         </div>
                     )}
                 </div>

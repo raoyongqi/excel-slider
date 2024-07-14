@@ -315,6 +315,7 @@ MODEL_DIR = "./models"
 
 if not os.path.exists(MODEL_DIR):
     os.makedirs(MODEL_DIR)
+    
 def train_and_save_models():
 
     feature_df = pd.read_sql("SELECT * FROM uploaded_feature", engine)

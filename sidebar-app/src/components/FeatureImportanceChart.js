@@ -5,10 +5,27 @@ import './FeatureImportanceChart.css';
 
 const FeatureImportanceChart = () => {
     const [chartData, setChartData] = useState([]);
+    const [selectedColumns, setSelectedColumns] = useState([]);
+    const [columns, setColumns] = useState([]);
 
     useEffect(() => {
         fetchFeatureImportances();
     }, []);
+
+    useEffect(() => {
+        if (chartData.length > 0) {
+            const featureColumns = chartData[0].importances.map(imp => imp.feature);
+            setColumns(featureColumns);
+
+            // 从localStorage中恢复上一次选择的列
+            const savedColumns = localStorage.getItem('selectedColumns');
+            if (savedColumns) {
+                setSelectedColumns(JSON.parse(savedColumns));
+            } else {
+                setSelectedColumns(featureColumns);
+            }
+        }
+    }, [chartData]);
 
     const fetchFeatureImportances = async () => {
         try {
@@ -19,40 +36,83 @@ const FeatureImportanceChart = () => {
         }
     };
 
-    const generateChartOptions = (label, features, importances) => ({
-        title: {
-            text: `Feature Importances for ${label}`,
-        },
-        tooltip: {},
-        xAxis: {
-            type: 'category',
-            data: features,
-        },
-        yAxis: {
-            type: 'value',
-        },
-        series: [
-            {
-                data: importances,
-                type: 'bar',
+    const handleColumnChange = (event) => {
+        const column = event.target.value;
+        const isChecked = event.target.checked;
+
+        setSelectedColumns((prev) => {
+            const updatedColumns = isChecked ? [...prev, column] : prev.filter((col) => col !== column);
+            // 保存选中的列到localStorage
+            localStorage.setItem('selectedColumns', JSON.stringify(updatedColumns));
+            return updatedColumns;
+        });
+    };
+
+    const handleToggleSelection = () => {
+        const updatedColumns = selectedColumns.length === columns.length ? [] : columns;
+        setSelectedColumns(updatedColumns);
+        // 保存选中的列到localStorage
+        localStorage.setItem('selectedColumns', JSON.stringify(updatedColumns));
+    };
+
+    const generateChartOptions = (label, features, importances) => {
+        const colors = features.map(feature => selectedColumns.includes(feature) ? '#c23531' : '#2f4554');
+        return {
+            title: {
+                text: `Feature Importances for ${label}`,
             },
-        ],
-    });
+            tooltip: {},
+            xAxis: {
+                type: 'category',
+                data: features,
+            },
+            yAxis: {
+                type: 'value',
+            },
+            series: [
+                {
+                    data: importances,
+                    type: 'bar',
+                    itemStyle: {
+                        color: (params) => colors[params.dataIndex],
+                    },
+                },
+            ],
+        };
+    };
 
     return (
-        <div className="feature-importance-chart-container">
-            {chartData.map((item, index) => (
-                <div key={index} className="feature-importance-chart">
-                    <ReactECharts
-                        option={generateChartOptions(
-                            item.label,
-                            item.importances.map(imp => imp.feature),
-                            item.importances.map(imp => imp.importance)
-                        )}
-                        style={{ height: '400px', width: '100%' }}
-                    />
-                </div>
-            ))}
+        <div>
+            <div className="column-selection">
+                <button onClick={handleToggleSelection}>
+                    {selectedColumns.length === columns.length ? 'Deselect All' : 'Select All'}
+                </button>
+                {columns.map((column, index) => (
+                    <label key={index}>
+                        <input
+                            type="checkbox"
+                            value={column}
+                            checked={selectedColumns.includes(column)}
+                            onChange={handleColumnChange}
+                        />
+                        {column}
+                    </label>
+                ))}
+            </div>
+            <div className="feature-importance-chart-container">
+                {chartData.map((item, index) => (
+                    <div key={index} className="feature-importance-chart">
+                        <ReactECharts
+                            option={generateChartOptions(
+                                item.label,
+                                item.importances.map(imp => imp.feature),
+                                item.importances.map(imp => imp.importance)
+                            )}
+                            style={{ height: '400px', width: '100%' }}
+                        />
+                    </div>
+                ))}
+            </div>
         </div>
     );
 };

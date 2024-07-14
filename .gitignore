@@ -1,3 +1,5 @@
 sidebar-app/node_modules/
 venv/
 uploads/
+upload_feature/
+upload/

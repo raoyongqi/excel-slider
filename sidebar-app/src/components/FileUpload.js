@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import axios from 'axios';
 import ExcelTable from './ExcelTable';
 
-const FileUpload = () => {
+const Preview = () => {
     const [selectedFile, setSelectedFile] = useState(null);
     const [uploading, setUploading] = useState(false);
     const [uploadedData, setUploadedData] = useState(null);
@@ -20,7 +20,7 @@ const FileUpload = () => {
         formData.append("files", selectedFile);
 
         try {
-            const response = await axios.post('http://localhost:8000/upload2/', formData, {
+            const response = await axios.post('http://localhost:8000/preview', formData, {
                 headers: {
                     'Content-Type': 'multipart/form-data'
                 }
@@ -52,4 +52,4 @@ const FileUpload = () => {
     );
 };
 
-export default FileUpload;
+export default Preview;

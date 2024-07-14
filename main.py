@@ -16,6 +16,7 @@ from FileManager import FileManager
 app = FastAPI()
 file_manager = FileManager()
 # 添加跨域支持
+
 origins = [
     "http://localhost",
     "http://localhost:3000",
@@ -40,29 +41,7 @@ ALLOWED_EXTENSIONS = {".xlsx", ".xlsm", ".xltx", ".xltm", ".xls"}
 def allowed_file(filename: str) -> bool:
     return os.path.splitext(filename)[1] in ALLOWED_EXTENSIONS
 
-# 数据库连接配置
-DATABASE_URL = "mysql+pymysql://root:123456@localhost/excel_db"
-
-# SQLAlchemy引擎和会话
-engine = create_engine(DATABASE_URL)
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-Base = declarative_base()
-
-# 自动映射数据库表
-metadata = MetaData()
-Base = automap_base(metadata=metadata)
-Base.prepare(engine, reflect=True)
-UploadedData = Base.classes.uploaded_data
-
-# 数据库会话依赖项
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
-
-@app.post("/upload2/")
+@app.post("/preview")
 async def upload_excel(files: List[UploadFile]):
     result = {}
     for file in files:
@@ -94,7 +73,7 @@ async def upload_excel(files: List[UploadFile]):
             return JSONResponse(status_code=500, content={"error": error_message, "traceback": error_traceback})
     return result
 
-@app.post("/upload/")
+@app.post("/upload_select")
 async def upload_excel(file: UploadFile = File(...)):
     if not file_manager.allowed_file(file.filename):
         raise HTTPException(status_code=400, detail=f"Unsupported file format: {file.filename}")
@@ -111,7 +90,8 @@ async def upload_excel(file: UploadFile = File(...)):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.post("/download/")
+
+@app.post("/download_select")
 
 async def download_file(filename: str = Form(...), columns: str = Form(...)):
     columns = columns.split(',')
@@ -128,16 +108,70 @@ async def download_file(filename: str = Form(...), columns: str = Form(...)):
     selected_df.to_excel(output_path, index=False)
 
     return FileResponse(output_path, filename=f"selected_{filename}.xlsx", media_type='application/octet-stream')
+# 自动映射数据库表
 
-# 上传Excel文件并处理
-@app.post("/upload_excel/")
+# 数据库连接配置
+DATABASE_URL = "mysql+pymysql://root:123456@localhost/excel_db"
+
+# SQLAlchemy引擎和会话
+engine = create_engine(DATABASE_URL)
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+Base = declarative_base()
+metadata = MetaData()
+Base = automap_base(metadata=metadata)
+Base.prepare(engine, reflect=True)
+
+# 数据库会话依赖项
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+
+
+# 获取数据库中的数据
+@app.get("/fetch_feature")
+def fetch_data(db: Session = Depends(get_db)):
+    try:
+        UploadedFeature = Base.classes.uploaded_feature
+        if not UploadedFeature :
+            raise HTTPException(status_code=404, detail="No mysql upload_feature table")
+        data = db.query(UploadedFeature).all()
+        if not data:
+            raise HTTPException(status_code=404, detail="No data found")
+        result = [item.__dict__ for item in data]
+        for item in result:
+            item.pop('_sa_instance_state', None)  # 去掉SQLAlchemy内部属性
+        return result
+    finally:
+        db.close()
+
+@app.get("/fetch_label")
+def fetch_data(db: Session = Depends(get_db)):
+    try:
+        UploadedLabel = Base.classes.uploaded_label
+        if not UploadedLabel :
+            raise HTTPException(status_code=404, detail="No mysql table")
+        data = db.query(UploadedLabel).all()
+        if not data:
+            raise HTTPException(status_code=404, detail="No data found")
+        result = [item.__dict__ for item in data]
+        for item in result:
+            item.pop('_sa_instance_state', None)  # 去掉SQLAlchemy内部属性
+        return result
+    finally:
+        db.close()
+
+
+@app.post("/upload_label")
 async def upload_excel(file: UploadFile = File(...), db: Session = Depends(get_db)):
     try:
         # 确保上传目录存在
-        os.makedirs("uploads", exist_ok=True)
+        os.makedirs("upload_label", exist_ok=True)
 
         # 保存上传的文件到磁盘
-        file_location = f"uploads/{file.filename}"
+        file_location = f"upload_label/{file.filename}"
         with open(file_location, "wb") as f:
             f.write(file.file.read())
 
@@ -153,7 +187,7 @@ async def upload_excel(file: UploadFile = File(...), db: Session = Depends(get_d
 
         # 动态创建SQLAlchemy模型
         metadata = MetaData()
-        table_name = "uploaded_data"
+        table_name = "uploaded_label"
 
         # 删除已有的表
         with engine.connect() as connection:
@@ -184,19 +218,63 @@ async def upload_excel(file: UploadFile = File(...), db: Session = Depends(get_d
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-# 获取数据库中的数据
-@app.get("/fetch_data")
-def fetch_data(db: Session = Depends(get_db)):
+
+@app.post("/upload_feature")
+async def upload_excel(file: UploadFile = File(...), db: Session = Depends(get_db)):
     try:
-        data = db.query(UploadedData).all()
-        if not data:
-            raise HTTPException(status_code=404, detail="No data found")
-        result = [item.__dict__ for item in data]
-        for item in result:
-            item.pop('_sa_instance_state', None)  # 去掉SQLAlchemy内部属性
-        return result
-    finally:
-        db.close()
+        # 确保上传目录存在
+        os.makedirs("upload_feature", exist_ok=True)
+
+        # 保存上传的文件到磁盘
+        file_location = f"upload_feature/{file.filename}"
+        with open(file_location, "wb") as f:
+            f.write(file.file.read())
+
+        # 读取Excel文件
+        df = pd.read_excel(file_location)
+
+        # 删除完全重复的行
+        df.drop_duplicates(inplace=True)
+
+        # 格式化浮点数列，保留六位小数
+        for col in df.select_dtypes(include=['float']):
+            df[col] = df[col].round(6)
+
+        # 动态创建SQLAlchemy模型
+        metadata = MetaData()
+        table_name = "uploaded_feature"
+
+        # 删除已有的表
+        with engine.connect() as connection:
+            connection.execute(text(f"DROP TABLE IF EXISTS {table_name}"))
+
+        # 动态创建表
+        columns = [Column("id", Integer, primary_key=True, autoincrement=True)]
+        for col in df.columns:
+            if df[col].dtype == 'object':
+                dtype = String(255)
+            elif df[col].dtype == 'float':
+                dtype = Float
+            else:
+                dtype = Integer
+            columns.append(Column(col, dtype))
+
+        table = Table(table_name, metadata, *columns)
+        metadata.create_all(engine)
+
+        # 插入数据
+        with db.begin():
+            for _, row in df.iterrows():
+                data = {col: row[col] for col in df.columns}
+                db.execute(table.insert().values(**data))
+
+        # 返回文件名作为响应
+        return {"filename": file.filename}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+
 
 if __name__ == "__main__":
     import uvicorn

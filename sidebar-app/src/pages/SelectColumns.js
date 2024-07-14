@@ -13,7 +13,7 @@ function SelectColumns() {
         formData.append('file', file);
 
         try {
-            const response = await axios.post('http://localhost:8000/upload/', formData, {
+            const response = await axios.post('http://localhost:8000/upload_select', formData, {
                 headers: {
                     'Content-Type': 'multipart/form-data',
                 },
@@ -31,7 +31,7 @@ function SelectColumns() {
         formData.append('columns', selectedColumns.join(','));
 
         try {
-            const response = await axios.post('http://localhost:8000/download/', formData, {
+            const response = await axios.post('http://localhost:8000/download_select', formData, {
                 responseType: 'blob',
             });
             const url = window.URL.createObjectURL(new Blob([response.data]));

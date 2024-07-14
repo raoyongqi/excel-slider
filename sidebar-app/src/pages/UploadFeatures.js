@@ -10,7 +10,7 @@ function UploadAndFetchFeatures() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await axios.get('http://localhost:8000/fetch_data');
+        const response = await axios.get('http://localhost:8000/fetch_feature');
         setData(response.data);
         setError('');
       } catch (error) {
@@ -33,7 +33,7 @@ function UploadAndFetchFeatures() {
     formData.append('file', file);
 
     try {
-      const response = await axios.post('http://localhost:8000/upload_excel/', formData, {
+      const response = await axios.post('http://localhost:8000/upload_feature', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },

@@ -5,7 +5,7 @@ import pandas as pd
 import os
 from tempfile import NamedTemporaryFile
 import shutil
-from typing import List
+
 from sqlalchemy import create_engine, MetaData, Table, Column, Integer, String, Float, text
 from sqlalchemy.orm import sessionmaker, Session
 from sqlalchemy.ext.declarative import declarative_base
@@ -13,6 +13,10 @@ from sqlalchemy.ext.automap import automap_base
 import logging
 import traceback
 from FileManager import FileManager
+from sklearn.ensemble import RandomForestClassifier
+import joblib
+from typing import List, Dict
+
 app = FastAPI()
 file_manager = FileManager()
 # 添加跨域支持
@@ -289,6 +293,8 @@ def fetch_data(db: Session = Depends(get_db)):
         return {"columns": list(result[0].keys()), "rows": result}
     finally:
         db.close()
+
+
 @app.get("/fetch_feature_box")
 def fetch_data(db: Session = Depends(get_db)):
     try:
@@ -304,6 +310,52 @@ def fetch_data(db: Session = Depends(get_db)):
         return {"columns": list(result[0].keys()), "rows": result}
     finally:
         db.close()
+
+MODEL_DIR = "./models"
+
+if not os.path.exists(MODEL_DIR):
+    os.makedirs(MODEL_DIR)
+def train_and_save_models():
+
+
+    feature_df = pd.read_sql("SELECT * FROM uploaded_feature", engine)
+    label_df = pd.read_sql("SELECT * FROM uploaded_label", engine)
+
+    for label_column in label_df.columns:
+        X = feature_df
+        y = label_df[label_column]
+
+        model = RandomForestClassifier()
+        model.fit(X, y)
+
+        joblib.dump(model, f"{MODEL_DIR}/model_{label_column}.joblib")
+
+def load_models():
+    models = {}
+    for file in os.listdir(MODEL_DIR):
+        if file.endswith(".joblib"):
+            label = file.replace("model_", "").replace(".joblib", "")
+            models[label] = joblib.load(f"{MODEL_DIR}/{file}")
+    return models
+
+@app.get("/feature_importances")
+async def feature_importances() -> Dict[str, List]:
+    try:
+        if not os.listdir(MODEL_DIR):
+            train_and_save_models()
+
+        models = load_models()
+        feature_df = pd.read_sql("SELECT * FROM uploaded_feature", engine)
+        importances = []
+
+        for label, model in models.items():
+            feature_importance = [{"feature": feature, "importance": importance} for feature, importance in zip(feature_df.columns, model.feature_importances_)]
+            importances.append({"label": label, "importances": feature_importance})
+
+        return {"data": importances}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"An error occurred: {e}")
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="127.0.0.1", port=8000)

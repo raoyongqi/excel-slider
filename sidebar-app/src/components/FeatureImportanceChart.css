@@ -1,0 +1,11 @@
+.feature-importance-chart-container {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-around;
+}
+
+.feature-importance-chart {
+    flex: 1 1 45%;
+    margin: 10px;
+    min-width: 300px;
+}

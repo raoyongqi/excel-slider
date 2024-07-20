@@ -312,7 +312,7 @@ def fetch_data(db: Session = Depends(get_db)):
         db.close()
 
 MODEL_DIR = "./models"
-
+FEATURE_NAMES_DIR = "./models"
 if not os.path.exists(MODEL_DIR):
     os.makedirs(MODEL_DIR)
     
@@ -331,6 +331,14 @@ def train_and_save_models():
         model.fit(X, y)
 
         joblib.dump(model, f"{MODEL_DIR}/model_{label_column}.joblib")
+        
+        feature_names = X.columns.tolist()
+        
+        with open(f"{FEATURE_NAMES_DIR}/feature_names_{label_column}.txt", 'w') as f:
+            for name in feature_names:
+                f.write(name + '\n')
+
+        print(f"Model and feature names for '{label_column}' saved successfully.")
 
 def load_models():
     models = {}

@@ -367,6 +367,41 @@ async def feature_importances() -> Dict[str, List]:
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"An error occurred: {e}")
 
+UPLOAD_DIR = "uploads_table"
+os.makedirs(UPLOAD_DIR, exist_ok=True)
+
+@app.post("/upload_table/")
+async def upload_table(file: UploadFile = File(...)):
+    # Save the uploaded file
+    file_location = os.path.join(UPLOAD_DIR, file.filename)
+    with open(file_location, "wb") as f:
+        f.write(await file.read())
+
+    # Read the sheet names
+    try:
+        excel_file = pd.ExcelFile(file_location)
+        sheet_names = excel_file.sheet_names
+    except Exception as e:
+        raise HTTPException(status_code=400, detail="Invalid Excel file")
+
+    return {"filename": file.filename, "sheet_names": sheet_names}
+
+@app.get("/download_table/{filename}/{sheet_name}")
+async def download_table(filename: str, sheet_name: str):
+    file_location = os.path.join(UPLOAD_DIR, filename)
+    
+    if not os.path.exists(file_location):
+        raise HTTPException(status_code=404, detail="File not found")
+
+    try:
+        df = pd.read_excel(file_location, sheet_name=sheet_name)
+        csv_location = os.path.join(UPLOAD_DIR, f"{sheet_name}.csv")
+        df.to_csv(csv_location, index=False)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail="Error reading the sheet")
+
+    return FileResponse(csv_location, media_type='text/csv', filename=f"{sheet_name}.csv")
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="127.0.0.1", port=8000)

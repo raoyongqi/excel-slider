@@ -19,6 +19,7 @@ const Sidebar = () => {
             <div className="sidebar-content">
                 <NavLink exact to="/" activeClassName="active">首页</NavLink>
                 <NavLink to="/data-preview" activeClassName="active">数据预览</NavLink>
+                <NavLink to="/select-table" activeClassName="active">选择子表</NavLink>
                 <NavLink to="/select-columns" activeClassName="active">选取子列</NavLink>
                 <div>
                     <div onClick={() => handleMenuClick('upload')} className="menu">

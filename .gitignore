@@ -1,6 +1,7 @@
 sidebar-app/node_modules/
 venv/
-uploads/
 upload_feature/
-upload/
+upload_label/
+uploads/
 joblib/
+uploads_table/

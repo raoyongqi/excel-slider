@@ -3,6 +3,7 @@ import React from 'react';
 import { Route, Routes } from 'react-router-dom';
 import Home from '../pages/Home';
 import DataPreview from '../pages/DataPreview';
+import SelectTable from '../pages/SelectTable';
 import SelectColumns from '../pages/SelectColumns';
 import UploadFeatures from '../pages/UploadFeatures';
 import UploadLabels from '../pages/UploadLabels';
@@ -17,6 +18,7 @@ const App = () => {
             <Routes>
                 <Route path="/" element={<Home />} />
                 <Route path="/data-preview" element={<DataPreview />} />
+                <Route path="/select-table"  element={<SelectTable />} />
                 <Route path="/select-columns"  element={<SelectColumns />} />
                 <Route path="/upload-features" element={<UploadFeatures />} />
                 <Route path="/upload-labels" element={<UploadLabels />} />            

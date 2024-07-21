@@ -2,7 +2,7 @@ import os
 import shutil
 from fastapi import UploadFile
 
-ALLOWED_EXTENSIONS = {".xlsx", ".xls"}
+ALLOWED_EXTENSIONS = {".xlsx", ".xls",".csv"}
 
 class FileManager:
     def __init__(self):

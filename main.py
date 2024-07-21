@@ -39,30 +39,62 @@ app.add_middleware(
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# 支持的文件扩展名
-ALLOWED_EXTENSIONS = {".xlsx", ".xlsm", ".xltx", ".xltm", ".xls"}
+ALLOWED_EXTENSIONS = {".xlsx", ".xlsm", ".xltx", ".xltm", ".xls", ".csv"}
 
 def allowed_file(filename: str) -> bool:
-    return os.path.splitext(filename)[1] in ALLOWED_EXTENSIONS
+    return os.path.splitext(filename)[1].lower() in ALLOWED_EXTENSIONS
+
+class FileManager:
+    def __init__(self):
+        self.base_dir = os.path.dirname(os.path.abspath(__file__))
+        self.upload_dir = os.path.join(self.base_dir, "uploads")
+        os.makedirs(self.upload_dir, exist_ok=True)
+
+    def allowed_file(self, filename: str) -> bool:
+        return allowed_file(filename)
+
+    def save_uploaded_file(self, file: UploadFile) -> str:
+        upload_subdir = os.path.join(self.upload_dir, os.path.splitext(file.filename)[0])
+        os.makedirs(upload_subdir, exist_ok=True)
+        upload_path = os.path.join(upload_subdir, file.filename)
+        with open(upload_path, "wb") as f:
+            shutil.copyfileobj(file.file, f)
+        return upload_path
+
+    def get_upload_path(self, filename: str) -> str:
+        return os.path.join(self.upload_dir, filename)
+
+file_manager = FileManager()
+logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.INFO)
+
+def read_file(file_path: str) -> pd.DataFrame:
+    extension = os.path.splitext(file_path)[1].lower()
+    if extension in [".xlsx", ".xls", ".xlsm", ".xltx", ".xltm"]:
+        return pd.read_excel(file_path)
+    elif extension == ".csv":
+        return pd.read_csv(file_path)
+    else:
+        raise ValueError("Unsupported file type")
 
 @app.post("/preview")
 async def upload_excel(files: List[UploadFile]):
     result = {}
     for file in files:
-        if not allowed_file(file.filename):
+        if not file_manager.allowed_file(file.filename):
             raise HTTPException(status_code=400, detail=f"Unsupported file format: {file.filename}")
 
         try:
             logger.info(f"Processing file: {file.filename}")
-            
-            # 将上传的文件保存到临时文件中
+
+            # Save the uploaded file to a temporary file
             with NamedTemporaryFile(delete=False, suffix=os.path.splitext(file.filename)[1]) as tmp:
                 shutil.copyfileobj(file.file, tmp)
                 tmp_name = tmp.name
-            
-            # 使用 pandas 读取 Excel 文件
-            df = pd.read_excel(tmp_name)
-            os.remove(tmp_name)  # 处理完后删除临时文件
+
+            # Use pandas to read the file
+            df = read_file(tmp_name)
+            os.remove(tmp_name)  # Remove the temporary file after processing
 
             columns = [{'key': str(i), 'name': col, 'editable': True} for i, col in enumerate(df.columns)]
             rows = df.to_dict(orient='records')
@@ -83,20 +115,18 @@ async def upload_excel(file: UploadFile = File(...)):
         raise HTTPException(status_code=400, detail=f"Unsupported file format: {file.filename}")
 
     try:
-        # 将上传的文件保存到指定子目录中
+        # Save the uploaded file to the specified subdirectory
         upload_path = file_manager.save_uploaded_file(file)
 
-        # 使用 pandas 读取 Excel 文件的列名
-        df = pd.read_excel(upload_path)
+        # Use pandas to read the file and get column names
+        df = read_file(upload_path)
         columns = [{'key': str(i), 'name': col, 'editable': True} for i, col in enumerate(df.columns)]
 
         return {"columns": columns, "filename": os.path.splitext(file.filename)[0]}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-
 @app.post("/download_select")
-
 async def download_file(filename: str = Form(...), columns: str = Form(...)):
     columns = columns.split(',')
     download_subdir = os.path.join(file_manager.upload_dir, filename)
@@ -105,13 +135,16 @@ async def download_file(filename: str = Form(...), columns: str = Form(...)):
         raise HTTPException(status_code=404, detail=f"No files found for filename: {filename}")
 
     selected_file = os.path.join(download_subdir, file_list[0])
-    df = pd.read_excel(selected_file)
-    selected_df = df[columns]
+    df = read_file(selected_file)
 
+    # Ensure columns exist in DataFrame
+    missing_columns = [col for col in columns if col not in df.columns]
+    if missing_columns:
+        raise HTTPException(status_code=400, detail=f"Columns not found in the file: {', '.join(missing_columns)}")
+
+    selected_df = df[columns]
     output_path = os.path.join(file_manager.upload_dir, f"selected_{filename}.xlsx")
     selected_df.to_excel(output_path, index=False)
-
-    return FileResponse(output_path, filename=f"selected_{filename}.xlsx", media_type='application/octet-stream')
 # 自动映射数据库表
 
 # 数据库连接配置

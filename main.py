@@ -44,26 +44,6 @@ ALLOWED_EXTENSIONS = {".xlsx", ".xlsm", ".xltx", ".xltm", ".xls", ".csv"}
 def allowed_file(filename: str) -> bool:
     return os.path.splitext(filename)[1].lower() in ALLOWED_EXTENSIONS
 
-class FileManager:
-    def __init__(self):
-        self.base_dir = os.path.dirname(os.path.abspath(__file__))
-        self.upload_dir = os.path.join(self.base_dir, "uploads")
-        os.makedirs(self.upload_dir, exist_ok=True)
-
-    def allowed_file(self, filename: str) -> bool:
-        return allowed_file(filename)
-
-    def save_uploaded_file(self, file: UploadFile) -> str:
-        upload_subdir = os.path.join(self.upload_dir, os.path.splitext(file.filename)[0])
-        os.makedirs(upload_subdir, exist_ok=True)
-        upload_path = os.path.join(upload_subdir, file.filename)
-        with open(upload_path, "wb") as f:
-            shutil.copyfileobj(file.file, f)
-        return upload_path
-
-    def get_upload_path(self, filename: str) -> str:
-        return os.path.join(self.upload_dir, filename)
-
 file_manager = FileManager()
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
@@ -145,6 +125,9 @@ async def download_file(filename: str = Form(...), columns: str = Form(...)):
     selected_df = df[columns]
     output_path = os.path.join(file_manager.upload_dir, f"selected_{filename}.xlsx")
     selected_df.to_excel(output_path, index=False)
+    
+    return FileResponse(output_path, filename=f"selected_{filename}.xlsx", media_type='application/octet-stream')
+
 # 自动映射数据库表
 
 # 数据库连接配置

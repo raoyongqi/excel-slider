@@ -6,6 +6,6 @@
 
 .boxplot-item {
     flex: 1 1 45%; /* Adjust the basis to control the size */
-    margin: 10px;
+    margin: 100px;
     min-width: 150px; /* Minimum width to ensure readability */
 }

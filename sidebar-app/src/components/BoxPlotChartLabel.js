@@ -65,7 +65,7 @@ const BoxPlotChartLabel  =  ({ type }) => {
           {chartData.map((item, index) => (
               <div key={index} className="boxplot-item">
                   <h2>{item.name}</h2>
-                  <ReactECharts option={item.option} style={{ height: '400px', width: '100%' }} />
+                  <ReactECharts option={item.option} style={{ height: '400px', width: '150%' }} />
               </div>
           ))}
       </div>

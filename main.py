@@ -198,9 +198,6 @@ async def upload_excel(file: UploadFile = File(...), db: Session = Depends(get_d
         # 读取Excel文件
         df = pd.read_excel(file_location)
 
-        # 删除完全重复的行
-        df.drop_duplicates(inplace=True)
-
         # 格式化浮点数列，保留六位小数
         for col in df.select_dtypes(include=['float']):
             df[col] = df[col].round(6)
@@ -252,9 +249,6 @@ async def upload_excel(file: UploadFile = File(...), db: Session = Depends(get_d
 
         # 读取Excel文件
         df = pd.read_excel(file_location)
-
-        # 删除完全重复的行
-        df.drop_duplicates(inplace=True)
 
         # 格式化浮点数列，保留六位小数
         for col in df.select_dtypes(include=['float']):
@@ -329,45 +323,58 @@ def fetch_data(db: Session = Depends(get_db)):
 
 MODEL_DIR = "./models"
 FEATURE_NAMES_DIR = "./models"
+
 if not os.path.exists(MODEL_DIR):
     os.makedirs(MODEL_DIR)
-    
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
 def train_and_save_models():
+    try:
+        feature_df = pd.read_sql("SELECT * FROM uploaded_feature", engine)
+        feature_df = feature_df.drop(columns=["id"])  # 移除id列
+        label_df = pd.read_sql("SELECT * FROM uploaded_label", engine)
+        label_df = label_df.drop(columns=["id"])  # 移除id列
 
-    feature_df = pd.read_sql("SELECT * FROM uploaded_feature", engine)
-    feature_df = feature_df.drop(columns=["id"])  # 移除id列
-    label_df = pd.read_sql("SELECT * FROM uploaded_label", engine)
-    label_df = label_df.drop(columns=["id"])  # 移除id列
+        for label_column in label_df.columns:
+            X = feature_df
+            y = label_df[label_column]
 
-    for label_column in label_df.columns:
-        X = feature_df
-        y = label_df[label_column]
+            model = RandomForestRegressor()
+            model.fit(X, y)
 
-        model = RandomForestRegressor()
-        model.fit(X, y)
+            joblib.dump(model, f"{MODEL_DIR}/model_{label_column}.joblib")
+            
+            feature_names = X.columns.tolist()
+            
+            with open(f"{FEATURE_NAMES_DIR}/feature_names_{label_column}.txt", 'w') as f:
+                for name in feature_names:
+                    f.write(name + '\n')
 
-        joblib.dump(model, f"{MODEL_DIR}/model_{label_column}.joblib")
-        
-        feature_names = X.columns.tolist()
-        
-        with open(f"{FEATURE_NAMES_DIR}/feature_names_{label_column}.txt", 'w') as f:
-            for name in feature_names:
-                f.write(name + '\n')
-
-        print(f"Model and feature names for '{label_column}' saved successfully.")
+            logger.info(f"Model and feature names for '{label_column}' saved successfully.")
+    except Exception as e:
+        logger.error(f"Error training and saving models: {e}")
+        raise
 
 def load_models():
     models = {}
-    for file in os.listdir(MODEL_DIR):
-        if file.endswith(".joblib"):
-            label = file.replace("model_", "").replace(".joblib", "")
-            models[label] = joblib.load(f"{MODEL_DIR}/{file}")
+    try:
+        for file in os.listdir(MODEL_DIR):
+            if file.endswith(".joblib"):
+                label = file.replace("model_", "").replace(".joblib", "")
+                models[label] = joblib.load(f"{MODEL_DIR}/{file}")
+    except Exception as e:
+        logger.error(f"Error loading models: {e}")
+        raise
     return models
 
 @app.get("/feature_importances")
 async def feature_importances() -> Dict[str, List]:
     try:
-        if not os.listdir(MODEL_DIR):
+        # Check if any model files exist
+        if not any(file.endswith(".joblib") for file in os.listdir(MODEL_DIR)):
             train_and_save_models()
 
         models = load_models()
@@ -381,7 +388,9 @@ async def feature_importances() -> Dict[str, List]:
 
         return {"data": importances}
     except Exception as e:
+        logger.error(f"Error in feature_importances endpoint: {e}")
         raise HTTPException(status_code=500, detail=f"An error occurred: {e}")
+    
 
 UPLOAD_DIR = "uploads_table"
 os.makedirs(UPLOAD_DIR, exist_ok=True)

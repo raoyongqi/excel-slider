@@ -1,0 +1,43 @@
+
+
+.header h1 {
+    margin-top: 0;
+}
+
+.content {
+    display: flex;
+    justify-content: space-between;
+}
+
+.task-list, .reminders {
+    width: 48%;
+}
+
+.task-list ul, .reminders ul {
+    list-style-type: none;
+    padding: 0;
+}
+
+.task-list li, .reminders li {
+    margin: 10px 0;
+}
+
+  .content {
+    flex-grow: 1; /* 使内容区域根据窗口大小进行调整 */
+    margin-left: 220px; /* 留出侧边栏和间距的空间 */
+    padding: 20px;
+  }
+
+/* MainContent.css */
+.main-content {
+    margin-left: 250px; /* 根据侧边栏宽度调整 */
+    padding: 20px;
+    background-color: #ffffff; /* 背景色为白色 */
+    min-height: 100vh; /* 最小高度为全高度 */
+  }
+  
+  .main-content h1, .main-content p {
+    color: #333333; /* 文字颜色 */
+  }
+  
+  

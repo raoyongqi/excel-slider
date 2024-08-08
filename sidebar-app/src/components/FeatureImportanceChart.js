@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import ReactECharts from 'echarts-for-react';
+import * as XLSX from 'xlsx';
 import './FeatureImportanceChart.css';
 
 const FeatureImportanceChart = () => {
@@ -81,6 +82,21 @@ const FeatureImportanceChart = () => {
         };
     };
 
+    const handleDownloadExcel = () => {
+        const wb = XLSX.utils.book_new();
+
+        chartData.forEach((item) => {
+            const data = item.importances
+                .filter((imp) => selectedColumns.includes(imp.feature))
+                .map((imp) => [imp.feature, imp.importance]);
+            
+            const ws = XLSX.utils.aoa_to_sheet([['Feature', 'Importance'], ...data]);
+            XLSX.utils.book_append_sheet(wb, ws, item.label);
+        });
+
+        XLSX.writeFile(wb, 'Feature_Importances.xlsx');
+    };
+
     return (
         <div>
             <div className="column-selection">
@@ -99,6 +115,7 @@ const FeatureImportanceChart = () => {
                     </label>
                 ))}
             </div>
+            <button onClick={handleDownloadExcel}>Download Excel</button>
             <div className="feature-importance-chart-container">
                 {chartData.map((item, index) => (
                     <div key={index} className="feature-importance-chart">
